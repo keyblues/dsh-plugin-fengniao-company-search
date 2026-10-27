@@ -19,6 +19,9 @@
  * `apikey` query parameter, exactly as the Fengniao skill defines it.
  */
 
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
 const TAG = '[fengniao-company-search]';
 const DEFAULT_BASE_URL = 'https://m.riskbird.com/prod-qbb-api';
 const DEFAULT_CREDENTIAL_REF = 'FENGNIAO_API_KEY';
@@ -31,6 +34,47 @@ const MAX_BODY_BYTES = 64 * 1024;
 const MAX_RENDER_CHARS = 16000;
 const SEARCH_LIMIT = 20;
 const USER_AGENT = 'dsh-fengniao-company-search/1.0';
+
+/** Promisified `execFile` backing the Windows registry environment fallback. */
+const execFileAsync = promisify(execFile);
+/** Short-lived cache of persisted Windows environment values, keyed by name. */
+const persistedEnvCache = new Map();
+
+/**
+ * Read a Windows environment variable the user persisted (User or Machine
+ * scope) straight from the registry. The GUI can be launched before a
+ * `setx`/Settings change reaches new processes, so `process.env` may lag by one
+ * launch; reading the registry makes a saved FN_API_KEY work immediately.
+ * At most one `reg query` per name per 30s.
+ */
+async function readPersistedWindowsEnv(name) {
+  if (process.platform !== 'win32' || name === '') return '';
+  const cached = persistedEnvCache.get(name);
+  if (cached !== undefined && Date.now() - cached.at < 30000) return cached.value;
+  const hives = [
+    'HKCU\\Environment',
+    'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment',
+  ];
+  for (const hive of hives) {
+    try {
+      const { stdout } = await execFileAsync('reg', ['query', hive, '/v', name], {
+        windowsHide: true,
+        timeout: 3000,
+        maxBuffer: 64 * 1024,
+      });
+      const line = stdout.split(/\r?\n/).find((entry) => entry.trim().startsWith(name));
+      const value = line === undefined ? '' : (line.trim().split(/\s{2,}/).pop() ?? '').trim();
+      if (value !== '') {
+        persistedEnvCache.set(name, { at: Date.now(), value });
+        return value;
+      }
+    } catch {
+      // Variable absent from this hive; try the next one.
+    }
+  }
+  persistedEnvCache.set(name, { at: Date.now(), value: '' });
+  return '';
+}
 
 /**
  * Supported data dimensions, copied from the Fengniao skill's tools.json.
@@ -175,8 +219,10 @@ async function readStoredKey(ctx, config) {
       // Fall through to the environment.
     }
   }
-  const ambient = typeof process.env[config.apiKeyEnv] === 'string' ? process.env[config.apiKeyEnv].trim() : '';
-  if (ambient !== '') return { key: ambient, source: 'env' };
+  const fromProcess = typeof process.env[config.apiKeyEnv] === 'string' ? process.env[config.apiKeyEnv].trim() : '';
+  if (fromProcess !== '') return { key: fromProcess, source: 'env' };
+  const persisted = await readPersistedWindowsEnv(config.apiKeyEnv);
+  if (persisted !== '') return { key: persisted, source: 'env' };
   return { key: '', source: 'none' };
 }
 
@@ -668,14 +714,33 @@ export const name = 'fengniao-company-search';
 /** The tool registry is a hard dependency; webServer/credentials are optional. */
 export const inject = ['tools'];
 
+/**
+ * Mount the settings routes once a live `webServer` exists. At boot this
+ * plugin can activate before the web host does, so `ctx.get('webServer')` is
+ * followed by a reactive `ctx.inject` that fires when the service mounts.
+ */
+function mountSettingsRoutes(ctx, config) {
+  let mounted = false;
+  const mount = (hostCtx) => {
+    if (mounted) return;
+    const webServer = hostCtx.get('webServer');
+    if (webServer === void 0 || typeof webServer.register !== 'function') return;
+    mounted = true;
+    hostCtx.effect(() => registerRoutes(hostCtx, webServer, config), 'fengniao: settings routes');
+  };
+  if (typeof ctx.inject === 'function') {
+    ctx.inject(['webServer'], (webCtx) => mount(webCtx));
+  }
+  // The service is often already live at activation (reload/HMR) — register now.
+  mount(ctx);
+  if (!mounted) {
+    console.info(`${TAG} webServer not available yet; settings routes will mount when it appears`);
+  }
+}
+
 /** Cordis plugin entry. */
 export function apply(ctx, rawConfig) {
   const config = normalizeConfig(rawConfig);
   registerTools(ctx, config);
-  const webServer = ctx.get('webServer');
-  if (webServer !== void 0 && typeof webServer.register === 'function') {
-    ctx.effect(() => registerRoutes(ctx, webServer, config), 'fengniao: settings routes');
-  } else {
-    console.info(`${TAG} webServer unavailable; the Plugins-page settings card will be read-only`);
-  }
+  mountSettingsRoutes(ctx, config);
 }
