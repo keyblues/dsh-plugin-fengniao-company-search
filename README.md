@@ -8,6 +8,16 @@
 - API Key 在 **DSH「插件」页 → 本插件详情页** 的配置卡片里填写（和官方"思考过程机器翻译"插件同一套 `plugins.bundle.config` 机制），保存在本机 Harness 凭据库，不回显、不写入 profile 配置文件，保存后立即生效。
 - 也可用环境变量 `FN_API_KEY` 或 profile `cordis.patch.yml` 里的 `config.apiKey`。
 
+## 安装
+
+这是一个 DSH profile bundle，安装后 Host 半注册工具、Client 半在「插件」页提供配置卡片：
+
+1. 让 DSH 的 plugin manager 把本目录作为 bundle 安装（`install_bundle`，target 传本目录绝对路径）；
+2. 安装后无需重启即可生效（Host 行与 Client 模块会热加载）；
+3. 打开「插件」页 → 本插件详情 → 在配置卡片里保存 API Key。
+
+也可把目录作为 link 依赖写进 profile 的 `package.json` 并加入 `dsh.profile.bundles`，启动时随 profile 加载。
+
 ## 支持的维度
 
 | dimension | 名称 | 上游 version |
