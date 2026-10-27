@@ -1,0 +1,61 @@
+{
+  "name": "@local/fengniao-company-search",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DeepSeek Harness (DSH) plugin: Fengniao (Riskbird) China company lookup — business registration, shareholders, executives, investments, changes and judicial/operating risk dimensions, with an API key configurable in the Plugins page. DSH 插件：风鸟企业查询（工商/股东/高管/对外投资/变更/司法与经营风险），插件页内配置 API Key。",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "fengniao",
+    "riskbird",
+    "company-search",
+    "company-lookup",
+    "due-diligence",
+    "企业查询",
+    "工商查询",
+    "企业尽调"
+  ],
+  "license": "MIT",
+  "author": "keyblues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keyblues/dsh-plugin-fengniao-company-search.git"
+  },
+  "homepage": "https://github.com/keyblues/dsh-plugin-fengniao-company-search#readme",
+  "bugs": {
+    "url": "https://github.com/keyblues/dsh-plugin-fengniao-company-search/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  }
+}

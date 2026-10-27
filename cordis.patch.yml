@@ -1,0 +1,24 @@
+# 风鸟 Fengniao / Riskbird 企业查询 Host 插件。
+#
+# 配置项全部可选（代码内提供默认值）：
+#   apiKey        直接写入的 API Key；优先级最高，但建议改用插件页或凭据库。
+#   credentialRef Harness 凭据库中的引用名，默认 FENGNIAO_API_KEY。
+#   apiKeyEnv     环境变量名，默认 FN_API_KEY。
+#   baseUrl       接口地址，默认 https://m.riskbird.com/prod-qbb-api。
+#   timeoutMs     单次接口超时（毫秒），默认 30000。
+#
+# 推荐在「插件」页打开本插件详情，用卡片里的输入框保存 API Key：
+# 它写入 Harness 凭据库（不落 profile 配置文件、不回显），无需重启。
+# 也可以在本 profile 的 cordis.patch.yml 里按 id 覆盖 config，例如：
+#   - id: fengniao-company-search
+#     config:
+#       apiKey: '你的 Key'
+# 下载包默认使用生产环境地址；如需内部联调再覆盖 baseUrl。
+- insert:
+    - id: fengniao-company-search
+      name: '@local/fengniao-company-search'
+      config:
+        baseUrl: https://m.riskbird.com/prod-qbb-api
+        credentialRef: FENGNIAO_API_KEY
+        apiKeyEnv: FN_API_KEY
+        timeoutMs: 30000
