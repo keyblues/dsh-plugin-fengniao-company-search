@@ -41,6 +41,20 @@ const execFileAsync = promisify(execFile);
 const persistedEnvCache = new Map();
 
 /**
+ * Extract the value of one `reg query` data line (`NAME    REG_SZ    value`).
+ * Splitting on runs of spaces would lose values that contain them and would
+ * return the type token (`REG_SZ`) for an empty value, so the type token is
+ * matched explicitly and everything after it is the value.
+ * @param {string} line - one trimmed data line.
+ * @param {string} name - the queried variable name.
+ * @returns {string} the value, or `''` when the line carries none.
+ */
+function parseRegValueLine(line, name) {
+  const match = /^\s*(REG_[A-Za-z0-9_]+)\s*([\s\S]*)$/u.exec(line.slice(name.length));
+  return match === null ? '' : match[2].trim();
+}
+
+/**
  * Read a Windows environment variable the user persisted (User or Machine
  * scope) straight from the registry. The GUI can be launched before a
  * `setx`/Settings change reaches new processes, so `process.env` may lag by one
@@ -62,8 +76,12 @@ async function readPersistedWindowsEnv(name) {
         timeout: 3000,
         maxBuffer: 64 * 1024,
       });
-      const line = stdout.split(/\r?\n/).find((entry) => entry.trim().startsWith(name));
-      const value = line === undefined ? '' : (line.trim().split(/\s{2,}/).pop() ?? '').trim();
+      const line = stdout.split(/\r?\n/).find((entry) => {
+        const trimmed = entry.trim();
+        // Exact name match, not a prefix of a longer variable such as NAME_EXTRA.
+        return trimmed.startsWith(name) && /^\s/u.test(trimmed.slice(name.length));
+      });
+      const value = line === undefined ? '' : parseRegValueLine(line.trim(), name);
       if (value !== '') {
         persistedEnvCache.set(name, { at: Date.now(), value });
         return value;
@@ -317,6 +335,19 @@ function describeApiFailure(payload) {
   return `${message}（code=${code === null ? 'unknown' : String(code)}）。`;
 }
 
+/**
+ * Whether an upstream envelope is a failure. `success: false` is authoritative
+ * when present, but an error can also arrive as `code` 9999 (key/quota) or
+ * 8888 (argument) without it, so those codes fail on their own.
+ * @param {unknown} payload - upstream JSON envelope.
+ * @returns {boolean} whether to surface the envelope as an error.
+ */
+function isApiFailure(payload) {
+  if (payload !== null && typeof payload === 'object' && payload.success === false) return true;
+  const code = Number(payload?.code);
+  return code === 9999 || code === 8888;
+}
+
 /** Pick the first string field present on a raw record. */
 function pickString(record, keys) {
   if (record === null || typeof record !== 'object' || Array.isArray(record)) return undefined;
@@ -467,7 +498,7 @@ function registerTools(ctx, config) {
         params: { key: keyword },
         signal: exec.signal,
       });
-      if (payload.success === false) throw new Error(describeApiFailure(payload));
+      if (isApiFailure(payload)) throw new Error(describeApiFailure(payload));
       const candidates = candidateRecords(payload.data)
         .slice(0, SEARCH_LIMIT)
         .map(toCandidate);
@@ -504,11 +535,12 @@ function registerTools(ctx, config) {
           label: { type: 'string' },
           apiCode: { type: 'integer' },
           success: { type: 'boolean' },
+          state: { type: 'string', enum: ['records', 'empty', 'unknown'] },
           message: { type: 'string' },
           data: {},
           truncated: { type: 'boolean' },
         },
-        required: ['dimension', 'label', 'apiCode', 'success', 'truncated'],
+        required: ['dimension', 'label', 'apiCode', 'success', 'state', 'truncated'],
       },
       render: (_args, value) => [{ type: 'text', text: renderDimension(value) }],
     },
@@ -531,7 +563,7 @@ function registerTools(ctx, config) {
         params: { version: spec.version, entid },
         signal: exec.signal,
       });
-      if (payload.success === false) throw new Error(describeApiFailure(payload));
+      if (isApiFailure(payload)) throw new Error(describeApiFailure(payload));
       const data = payload.data === undefined ? null : payload.data;
       const rendered = jsonText(data);
       const state = dimensionState(data);
@@ -555,8 +587,8 @@ function registerTools(ctx, config) {
   return [searchTool.name, dimensionTool.name];
 }
 
-/** Exported for local rendering checks; not part of the plugin contract. */
-export { dimensionState, renderDimension, renderSearch };
+/** Exported for local rendering checks and tests; not part of the plugin contract. */
+export { dimensionState, parseRegValueLine, renderDimension, renderSearch };
 
 const API_KEY_MISSING_MESSAGE = [
   '尚未配置风鸟 API Key。',
@@ -613,7 +645,10 @@ async function writeApiKey(ctx, config, apiKey) {
     throw new Error('Harness 凭据服务不可用，无法保存 API Key；请改用环境变量 FN_API_KEY 或插件配置 apiKey。');
   }
   if (apiKey === '') {
-    if (typeof credentials.unset === 'function') await credentials.unset(config.credentialRef);
+    if (typeof credentials.unset !== 'function') {
+      throw new Error('Harness 凭据服务不支持删除 Key，无法清除已保存的 API Key。');
+    }
+    await credentials.unset(config.credentialRef);
     return;
   }
   if (apiKey.length < 6 || apiKey.length > 512) {
@@ -677,9 +712,9 @@ function registerRoutes(ctx, webServer, config) {
             signal: new AbortController().signal,
           });
           const apiCode = Number.isFinite(Number(payload.code)) ? Number(payload.code) : null;
-          // `success` is authoritative: the API answers code 20000 / "成功" on a
-          // healthy search, and only 9999 (key/quota) and 8888 (argument) are failures.
-          const ok = payload.success !== false && apiCode !== 9999 && apiCode !== 8888;
+          // A healthy search answers code 20000 / "成功"; only `success: false`,
+          // 9999 (key/quota), and 8888 (argument) count as failures.
+          const ok = !isApiFailure(payload);
           sendJson(res, 200, {
             ok,
             httpStatus,

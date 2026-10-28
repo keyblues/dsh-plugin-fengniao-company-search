@@ -13,7 +13,7 @@
 这是一个 DSH profile bundle，安装后 Host 半注册工具、Client 半在「插件」页提供配置卡片：
 
 1. 让 DSH 的 plugin manager 把本目录作为 bundle 安装（`install_bundle`，target 传本目录绝对路径）；
-2. 安装后无需重启即可生效（Host 行与 Client 模块会热加载）；
+2. 新安装无需重启即可生效（Host 行与 Client 模块会热加载）；**更新已安装插件后需重启 DSH**，运行中的进程不会重新加载已修改的 Host 模块；
 3. 打开「插件」页 → 本插件详情 → 在配置卡片里保存 API Key。
 
 也可把目录作为 link 依赖写进 profile 的 `package.json` 并加入 `dsh.profile.bundles`，启动时随 profile 加载。
@@ -65,6 +65,14 @@
 
 Agent 会先调用 `fengniao_search_company` 解析主体拿到 `entid`，再按需调用 `fengniao_company_dimension`。名称有歧义时会先向你确认主体。
 
+## 测试
+
+```bash
+npm test        # 等价于 node --test，只用 Node 内置 test runner，无需安装依赖
+```
+
+覆盖：两个工具 `execute()` 返回值与声明 `output.schema` 的一致性（DSH 会按 `additionalProperties: false` 校验，未声明的字段会让整次调用失败）、上游错误码映射、Windows 注册表环境变量解析、设置路由的自定义请求头校验与「不回显 Key」断言。
+
 ## 错误码
 
 - `code=9999` 且提示 apikey 不合法/未配置 → 到插件页重新保存 Key
@@ -80,6 +88,7 @@ client.js          Client 半：插件页内的 API Key 配置卡片
 cordis.patch.yml   bundle 清单（插入 fengniao-company-search 行）
 locale/*.json      插件页展示的标题与描述
 icon.svg           插件图标
+test/plugin.test.js 输出契约、错误码、注册表解析与设置路由的回归测试
 ```
 
 ## 安全边界

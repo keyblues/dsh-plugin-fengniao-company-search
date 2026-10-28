@@ -25,7 +25,6 @@ window.__ModuleLoader__.load({
         'status.loading': 'Reading configuration…',
         'status.configured': 'Configured',
         'status.missing': 'No API key yet',
-        'status.loadFailed': 'Could not read the configuration.',
         'source.credential': 'Harness credentials',
         'source.config': 'plugin config',
         'source.env': 'environment variable',
@@ -46,7 +45,7 @@ window.__ModuleLoader__.load({
         loadFailed: 'The configuration route is unreachable. Reload the page and retry.',
         invalidDraft: 'Paste a complete API key first.',
         hintStorage:
-          'The key is stored in the local Harness credential store (never written to the profile settings file and never echoed back); only the last characters are shown. The environment variable FENGNIAO_API_KEY and the plugin config field apiKey are also accepted.',
+          'The key is stored in the local Harness credential store (never written to the profile settings file and never echoed back); only the last characters are shown. The environment variable FN_API_KEY and the plugin config field apiKey are also accepted.',
         hintGenerate:
           'Generate the key in the Fengniao web console under Account settings → API Key; the full key is shown only once.',
         endpoint: 'Endpoint',
@@ -56,7 +55,6 @@ window.__ModuleLoader__.load({
         'status.loading': '正在读取配置…',
         'status.configured': '已配置',
         'status.missing': '尚未配置 API Key',
-        'status.loadFailed': '无法读取配置。',
         'source.credential': 'Harness 凭据库',
         'source.config': '插件配置',
         'source.env': '环境变量',
@@ -77,7 +75,7 @@ window.__ModuleLoader__.load({
         loadFailed: '配置接口不可达，请刷新页面重试。',
         invalidDraft: '请先粘贴完整的 API Key。',
         hintStorage:
-          'Key 保存在本机 Harness 凭据库（不写入 profile 配置文件、不回显），页面只显示尾号；也支持环境变量 FENGNIAO_API_KEY 或插件配置 apiKey。',
+          'Key 保存在本机 Harness 凭据库（不写入 profile 配置文件、不回显），页面只显示尾号；也支持环境变量 FN_API_KEY 或插件配置 apiKey。',
         hintGenerate:
           'Key 获取方式：风鸟 Web 端「账户设置 → API Key」生成个人 API Key，完整 Key 仅展示一次。',
         endpoint: '接口地址',
@@ -230,7 +228,7 @@ window.__ModuleLoader__.load({
           },
           (result) => {
             setDraft('');
-            return { tone: 'ok', text: result?.saved === true ? t('saved') : t('saved') };
+            return { tone: 'ok', text: t('saved') };
           },
         );
       }, [draft, run, setNotice, t]);
