@@ -27,7 +27,8 @@
     "url": "https://github.com/keyblues/dsh-plugin-fengniao-company-search/issues"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20",
+    "dsh": ">=0.2.1-rc.3 <0.3.0-0"
   },
   "scripts": {
     "test": "node --test"

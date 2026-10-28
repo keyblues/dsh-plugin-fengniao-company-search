@@ -5,6 +5,7 @@
 [![Version](https://img.shields.io/badge/version-1.0.1-blue?style=flat-square)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?style=flat-square)](package.json)
+[![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.3%2B-4D6BFE?style=flat-square)](#兼容性)
 
 **标签**：`dsh-plugin` · `dsh-bundle` · `deepseek-harness` · `fengniao` · `riskbird` · `company-search` · `due-diligence` · `企业查询` · `工商查询` · `企业尽调`
 
@@ -23,15 +24,32 @@
 
 ### 1. 安装
 
-用 DSH 的 plugin manager 把本目录作为 bundle 安装（`install_bundle`，target 传本目录绝对路径）：
+在 DSH 侧边栏的「插件」页可以直接从 GitHub 仓库安装，不需要手动下载或敲命令：
 
-```text
-plugin_manager  action=install_bundle  target=<本目录绝对路径>
-```
+1. 打开「插件」页；
+2. 点右上角「添加插件」（箭头菜单里是「安装第三方插件」）；
+3. 在「包名或地址」输入框里粘贴本仓库地址：
 
-新安装无需重启即可生效（Host 行与 Client 模块会热加载）；**更新已安装插件后需重启 DSH**，运行中的进程不会重新加载已修改的 Host 模块。
+   ```text
+   https://github.com/keyblues/dsh-plugin-fengniao-company-search
+   ```
 
-也可以把本目录作为 `link:` 依赖写进 profile 的 `package.json`，并加入 `dsh.profile.bundles`，启动时随 profile 加载。
+4. 点「安装」，等待下载完成（需要本机能访问 github.com）；
+5. 安装完成后插件自动启用：进入本插件详情页，在配置卡片里保存 API Key。
+
+不同网络环境下的输入方式：
+
+| 场景 | 「包名或地址」怎么填 |
+| --- | --- |
+| 能正常访问 GitHub（推荐） | `https://github.com/keyblues/dsh-plugin-fengniao-company-search` |
+| GitHub 连不上 | 先 `git clone` 本仓库，再填本地目录的绝对路径；DSH 会以 `link:` 方式安装该目录 |
+| 想让 Agent 代劳 | 在对话框里直接说「安装插件 https://github.com/keyblues/dsh-plugin-fengniao-company-search」 |
+
+补充说明：
+
+- 新安装无需重启即可生效（Host 行与 Client 模块会热加载）；**更新已安装插件后需要重启 DSH**，运行中的进程不会重新加载已修改的 Host 模块。
+- 卸载：在「插件」页打开本插件详情 → 卸载。
+- GitHub 安装失败通常是网络问题（`ECONNRESET`、连接超时），改用上面的本地目录方式即可。
 
 ### 2. 配置 API Key
 
@@ -155,7 +173,8 @@ test/plugin.test.js 输出契约、错误码、注册表解析与设置路由的
 ## 兼容性
 
 - Node.js ≥ 20（DSH 内置 Node 即可）
-- 在 DSH `0.2.1-rc.3` 上验证；依赖 `tools`、`webServer`（可选）、`credentials`（可选）服务与 `plugins.bundle.config` 插槽
+- DSH `>=0.2.1-rc.3 <0.3.0-0`：由 `package.json` 的 `engines.dsh` 声明，装错版本时 DSH 会直接拒绝安装；已在 `0.2.1-rc.3` 上验证
+- 依赖 `tools` 服务；`webServer`、`credentials` 为可选服务（缺失时对应能力不可用）；Client 半使用 `plugins.bundle.config` 插槽
 
 ## License
 
