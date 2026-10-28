@@ -1,7 +1,7 @@
 /**
  * Fengniao (Riskbird) China company search — DSH Host plugin.
  *
- * Two model-facing tools over the Fengniao "skill" HTTP API
+ * Two model-facing tools over the Fengniao (Riskbird) HTTP API
  * (`https://m.riskbird.com/prod-qbb-api`):
  *   - `fengniao_search_company`   — fuzzy company-name search → candidates + entid
  *   - `fengniao_company_dimension` — one data dimension for an entid
@@ -16,7 +16,7 @@
  * API key resolution order: config.apiKey → Harness credentials
  * (config.credentialRef, default FENGNIAO_API_KEY) → environment variable
  * (config.apiKeyEnv, default FN_API_KEY). The key travels as the upstream
- * `apikey` query parameter, exactly as the Fengniao skill defines it.
+ * `apikey` query parameter required by the upstream API.
  */
 
 import { execFile } from 'node:child_process';
@@ -95,8 +95,7 @@ async function readPersistedWindowsEnv(name) {
 }
 
 /**
- * Supported data dimensions, copied from the Fengniao skill's tools.json.
- * `version` is the upstream `dataDimension?version=` value.
+ * Supported data dimensions. `version` is the upstream `dataDimension?version=` value.
  */
 const DIMENSIONS = {
   basic_info: {

@@ -8,7 +8,7 @@
 
 **标签**：`dsh-plugin` · `dsh-bundle` · `deepseek-harness` · `fengniao` · `riskbird` · `company-search` · `due-diligence` · `企业查询` · `工商查询` · `企业尽调`
 
-把 Claude Code 的 `china-company-search-fengniao` skill 移植为 DeepSeek Harness（DSH）bundle：Host 半注册两个原生 Agent 工具，Client 半在「插件」页提供 API Key 配置卡片，不再需要 `node scripts/tool.mjs` 之类的命令行包装。
+风鸟（Riskbird）企业查询的 DeepSeek Harness（DSH）插件：安装后由 Agent 直接调用两个原生工具，按中文企业名称查询工商信息、股东、高管、对外投资、变更以及被执行/失信/经营异常等司法与经营风险数据；API Key 在「插件」页的配置卡片里保存。
 
 ## 特性
 
